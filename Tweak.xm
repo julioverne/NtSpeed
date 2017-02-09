@@ -159,7 +159,7 @@ __strong static id _sharedObject;
 			[(UIView *)springboardWindow addSubview:backView];
 			
 			UIView* content = [UIView new];
-			content.alpha = 0.8f;
+			content.alpha = 0.9f;
 			content.frame = CGRectMake(4, 0, springboardWindow.frame.size.width-8, springboardWindow.frame.size.height);
 			label = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, content.frame.size.width, content.frame.size.height)];
 			[self update];
@@ -255,6 +255,11 @@ __strong static id _sharedObject;
 	[[NtSpeed sharedInstance] firstload];	
 }
 - (void)noteInterfaceOrientationChanged:(int)arg1 duration:(float)arg2
+{
+	%orig;
+	[NtSpeed notifyOrientationChange];
+}
+- (void)noteInterfaceOrientationChanged:(long long)arg1 duration:(double)arg2 logMessage:(id)arg3
 {
 	%orig;
 	[NtSpeed notifyOrientationChange];
