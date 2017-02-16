@@ -94,7 +94,7 @@ long getBytesTotal()
 - (UIWindow*)widgetWindow;
 @end
 
-static void screenChanged()
+static void orientationChanged()
 {
 	[NtSpeed notifyOrientationChange];
 }
@@ -110,7 +110,8 @@ __strong static id _sharedObject;
 	if (!_sharedObject) {
 		_sharedObject = [[self alloc] init];
 		[NSTimer scheduledTimerWithTimeInterval:1 target:_sharedObject selector:@selector(update) userInfo:nil repeats:YES];
-		CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)&screenChanged, CFSTR("com.apple.springboard.screenchanged"), NULL, 0);
+		CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)&orientationChanged, CFSTR("com.apple.springboard.screenchanged"), NULL, 0);
+		CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), NULL, (CFNotificationCallback)&orientationChanged, CFSTR("UIWindowDidRotateNotification"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 	}
 	return _sharedObject;
 }
@@ -254,18 +255,7 @@ __strong static id _sharedObject;
 	%orig;
 	[[NtSpeed sharedInstance] firstload];	
 }
-- (void)noteInterfaceOrientationChanged:(int)arg1 duration:(float)arg2
-{
-	%orig;
-	[NtSpeed notifyOrientationChange];
-}
-- (void)noteInterfaceOrientationChanged:(long long)arg1 duration:(double)arg2 logMessage:(id)arg3
-{
-	%orig;
-	[NtSpeed notifyOrientationChange];
-}
 %end
-
 
 %ctor
 {
