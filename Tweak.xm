@@ -23,8 +23,6 @@ static __strong NSString* kKs = @"%.1fK/s";
 static __strong NSString* kMs = @"%.2fM/s";
 static __strong NSString* kGs = @"%.3fG/s";
 
-static const char* kwifi = "en0";
-static const char* kcell = "pdp_ip0";
 
 NSString *bytesFormat(long bytes)
 {
@@ -60,12 +58,9 @@ long getBytesTotal()
 			if (ifa->ifa_data == 0) {
 				continue;
 			}
-			if (!strcmp(ifa->ifa_name, kwifi) || !strcmp(ifa->ifa_name, kcell)) {
-				struct if_data *if_data = (struct if_data *)ifa->ifa_data;
-				iBytes += if_data->ifi_ibytes;
-				oBytes += if_data->ifi_obytes;
-				break;
-			}
+			struct if_data *if_data = (struct if_data *)ifa->ifa_data;
+			iBytes += if_data->ifi_ibytes;
+			oBytes += if_data->ifi_obytes;
 		}
 		freeifaddrs(ifa_list);
 		return iBytes + oBytes;
@@ -91,7 +86,6 @@ long getBytesTotal()
 + (void)notifyOrientationChange;
 - (void)firstload;
 - (void)orientationChanged;
-- (UIWindow*)widgetWindow;
 @end
 
 static void orientationChanged()
@@ -133,10 +127,6 @@ __strong static id _sharedObject;
 - (void)firstload
 {
 	return;
-}
-- (UIWindow*)widgetWindow
-{
-	return springboardWindow;
 }
 -(id)init
 {
@@ -208,14 +198,14 @@ __strong static id _sharedObject;
 	__block int yLoc;
 	#define DegreesToRadians(degrees) (degrees * M_PI / 180)
 	switch (orientation) {
-        case UIDeviceOrientationLandscapeRight: {			
+	case UIDeviceOrientationLandscapeRight: {			
 			isLandscape = YES;
 			yLoc = 5;
 			xLoc = 20;
 			newTransform = CGAffineTransformMakeRotation(-DegreesToRadians(90));
 			break;
 		}
-        case UIDeviceOrientationLandscapeLeft: {
+	case UIDeviceOrientationLandscapeLeft: {
 			isLandscape = YES;
 			yLoc = (kScreenH-kWidth-5);
 			xLoc = (kScreenW-kHeight-20);
@@ -230,7 +220,7 @@ __strong static id _sharedObject;
 			break;
 		}
 		case UIDeviceOrientationPortrait:
-        default: {
+	default: {
 			isLandscape = NO;
 			yLoc = 20;
 			xLoc = (kScreenW-kWidth-5);
