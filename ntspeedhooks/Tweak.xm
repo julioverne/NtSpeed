@@ -1,7 +1,8 @@
 #import <dlfcn.h>
 #import <objc/runtime.h>
-#include <sys/sysctl.h>
+#import <sys/sysctl.h>
 #import <substrate.h>
+#import <notify.h>
 
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -14,6 +15,11 @@
 
 static BOOL Enabled;
 
+static BOOL alwaysVisible;
+static BOOL isBlackScreen;
+
+static int textColor;
+
 static int kWidth = 40;
 static int kHeight = 15;
 
@@ -21,6 +27,7 @@ static int kLocX = 5;
 static int kLocY = 20;
 
 static float kAlpha = 0.5f;
+static float kAlphaText = 0.9f;
 static float kRadius = 6;
 
 static BOOL forceNewLocation;
@@ -28,13 +35,13 @@ static BOOL forceNewLocation;
 static float kScreenW;
 static float kScreenH;
 
-static __strong NSString* kBs = @"%ldB/s";
-static __strong NSString* kKs = @"%.1fK/s";
-static __strong NSString* kMs = @"%.2fM/s";
-static __strong NSString* kGs = @"%.3fG/s";
+static __strong NSString* kBs = [@"%ldB/s" copy];
+static __strong NSString* kKs = [@"%.1fK/s" copy];
+static __strong NSString* kMs = [@"%.2fM/s" copy];
+static __strong NSString* kGs = [@"%.3fG/s" copy];
 
 
-static NSString *bytesFormat(long bytes)
+static NSString *bytesFormat(long long bytes)
 {
 	@autoreleasepool {
 		if(bytes < 1024) {
@@ -49,14 +56,11 @@ static NSString *bytesFormat(long bytes)
 	}
 }
 
-static long getBytesTotal() 
+static long long getBytesTotal() 
 {
 	@autoreleasepool {
-		if(!Enabled) {
-			return 0;
-		}
-		uint32_t iBytes = 0;
-		uint32_t oBytes = 0;
+		long long iBytes = 0;
+		long long oBytes = 0;
 		struct ifaddrs *ifa_list = NULL, *ifa;
 		if ((getifaddrs(&ifa_list) < 0) || !ifa_list || ifa_list==0) {
 			return 0;
@@ -92,6 +96,19 @@ static long getBytesTotal()
 - (UIDeviceOrientation)_frontMostAppOrientation;
 @end
 
+@interface NtSpeedWindow : UIWindow
+@end
+@implementation NtSpeedWindow
+- (BOOL)_ignoresHitTest
+{
+	return YES;
+}
++ (BOOL)_isSecure
+{
+	return YES;
+}
+@end
+
 @interface NtSpeed : NSObject
 {
 	UIWindow* springboardWindow;
@@ -116,7 +133,7 @@ static void orientationChanged()
 	[NtSpeed notifyOrientationChange];
 }
 
-static long oldSpeed = 0;
+static long long oldSpeed = 0;
 static UIDeviceOrientation orientationOld;
 
 @implementation NtSpeed
@@ -159,7 +176,7 @@ __strong static id _sharedObject;
 			kScreenW = [[UIScreen mainScreen] bounds].size.width;
 			kScreenH = [[UIScreen mainScreen] bounds].size.height;
 			
-			springboardWindow = [[UIWindow alloc] initWithFrame:CGRectMake(0, 0, kWidth, kHeight)];
+			springboardWindow = [[NtSpeedWindow alloc] initWithFrame:CGRectMake(0, 0, kWidth, kHeight)];
 			springboardWindow.windowLevel = 9999999999;
 			[springboardWindow setHidden:NO];
 			springboardWindow.alpha = 1;
@@ -172,16 +189,16 @@ __strong static id _sharedObject;
 			backView = [UIView new];
 			backView.frame = CGRectMake(0, 0, springboardWindow.frame.size.width, springboardWindow.frame.size.height);
 			backView.backgroundColor = [UIColor colorWithWhite: 0.50 alpha:1];
-			backView.alpha = kAlpha;
+			backView.alpha = kAlpha; // 0.5f
 			[(UIView *)springboardWindow addSubview:backView];
 			
 			content = [UIView new];
-			content.alpha = 0.9f;
+			content.alpha = kAlphaText;// 0.9f
 			content.frame = CGRectMake(4, 0, springboardWindow.frame.size.width-8, springboardWindow.frame.size.height);
 			label = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, content.frame.size.width, content.frame.size.height)];
 			[self update];
 			label.numberOfLines = 1;
-			label.textColor = [UIColor whiteColor];
+			label.textColor = textColor==0?[UIColor whiteColor]:textColor==1?[UIColor blackColor]:[UIColor redColor];
 			label.baselineAdjustment = YES;
 			label.adjustsFontSizeToFitWidth = YES;
 			label.adjustsLetterSpacingToFitWidth = YES;
@@ -205,6 +222,8 @@ __strong static id _sharedObject;
 - (void)_updateFrame
 {
 	backView.alpha = kAlpha;
+	content.alpha = kAlphaText;
+	label.textColor = textColor==0?[UIColor whiteColor]:textColor==1?[UIColor blackColor]:[UIColor redColor];
 	springboardWindow.layer.cornerRadius = kRadius;
 	springboardWindow.frame = CGRectMake(0, 0, kWidth, kHeight);
 	backView.frame = CGRectMake(0, 0, springboardWindow.frame.size.width, springboardWindow.frame.size.height);
@@ -217,21 +236,22 @@ __strong static id _sharedObject;
 - (void)update
 {
 	@autoreleasepool {
-		long nowData = getBytesTotal();
-		if(!oldSpeed) {
-			oldSpeed = nowData;
-		}
-		if(nowData<=0) {
-			if(springboardWindow) {
+		if(!Enabled || isBlackScreen) {
+			if(springboardWindow && !springboardWindow.hidden) {
 				[springboardWindow setHidden:YES];
 			}
 			return;
 		}
+		long long nowData = getBytesTotal();
+		if(!oldSpeed) {
+			oldSpeed = nowData;
+		}
 		if(label&&springboardWindow) {
-			long speed = nowData-oldSpeed;
-			if(!forceNewLocation) {
-				[springboardWindow setHidden:(speed<=0)?YES:NO];
+			long long speed = nowData-oldSpeed;
+			if(speed < 0) {
+				speed = 0;
 			}
+			[springboardWindow setHidden:(!alwaysVisible && speed==0)?YES:NO];
 			label.text = bytesFormat(speed);
 		}
 		oldSpeed = nowData;
@@ -299,21 +319,38 @@ __strong static id _sharedObject;
 }
 %end
 
+static void screenDisplayStatus(CFNotificationCenterRef center, void* observer, CFStringRef name, const void* object, CFDictionaryRef userInfo)
+{
+    uint64_t state;
+    int token;
+    notify_register_check("com.apple.iokit.hid.displayStatus", &token);
+    notify_get_state(token, &state);
+    notify_cancel(token);
+    if(!state) {
+		isBlackScreen = YES;
+		oldSpeed = 0;
+    } else {
+		isBlackScreen = NO;
+	}
+}
 
 static void settingsChanged(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo)
 {
 	@autoreleasepool {		
 		NSDictionary *TweakPrefs = [[[NSDictionary alloc] initWithContentsOfFile:@PLIST_PATH_Settings]?:[NSDictionary dictionary] copy];
 		Enabled = (BOOL)[[TweakPrefs objectForKey:@"Enabled"]?:@YES boolValue];
+		alwaysVisible = (BOOL)[[TweakPrefs objectForKey:@"alwaysVisible"]?:@NO boolValue];
+		int newtextColor = (int)[[TweakPrefs objectForKey:@"textColor"]?:@(0) intValue];
 		int newkLocX = (int)[[TweakPrefs objectForKey:@"kLocX"]?:@(5) intValue];
 		int newkLocY = (int)[[TweakPrefs objectForKey:@"kLocY"]?:@(20) intValue];
 		int newkWidth = (int)[[TweakPrefs objectForKey:@"kWidth"]?:@(40) intValue];
 		int newkHeight = (int)[[TweakPrefs objectForKey:@"kHeight"]?:@(15) intValue];
 		float newkAlpha = (float)[[TweakPrefs objectForKey:@"kAlpha"]?:@(0.5) floatValue];
+		float newkAlphaText = (float)[[TweakPrefs objectForKey:@"kAlphaText"]?:@(0.9) floatValue];
 		float newkRadius = (float)[[TweakPrefs objectForKey:@"kRadius"]?:@(6) floatValue];
 		
 		BOOL needUpdateUI = NO;
-		if(newkLocX!=kLocX || newkLocY!=kLocY || newkWidth!=kWidth || newkHeight!=kHeight || newkAlpha!=kAlpha || newkRadius!=kRadius) {
+		if(newkLocX!=kLocX || newkLocY!=kLocY || newkWidth!=kWidth || newkHeight!=kHeight || newkAlpha!=kAlpha || newkRadius!=kRadius || newtextColor!=textColor || newkAlphaText!=kAlphaText) {
 			needUpdateUI = YES;
 		}
 		kLocX = newkLocX;
@@ -322,6 +359,8 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 		kHeight = newkHeight;
 		kAlpha = newkAlpha;
 		kRadius = newkRadius;
+		textColor = newtextColor;
+		kAlphaText = newkAlphaText;
 		if(needUpdateUI && [NtSpeed sharedInstanceExist]) {
 			if (NtSpeed* NTShared = [NtSpeed sharedInstance]) {
 				[NTShared updateFrame];
@@ -332,6 +371,7 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 
 %ctor
 {
+	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, screenDisplayStatus, CFSTR("com.apple.iokit.hid.displayStatus"), NULL, 0);
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, settingsChanged, CFSTR("com.julioverne.ntspeed/Settings"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 	settingsChanged(NULL, NULL, NULL, NULL, NULL);
 	%init;

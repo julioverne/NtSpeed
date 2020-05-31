@@ -31,6 +31,30 @@
 		spec = [PSSpecifier emptyGroupSpecifier];
         [specifiers addObject:spec];
 		
+		
+		spec = [PSSpecifier preferenceSpecifierNamed:@"Always Visible"
+                                                  target:self
+											         set:@selector(setPreferenceValue:specifier:)
+											         get:@selector(readPreferenceValue:)
+                                                  detail:Nil
+											        cell:PSSwitchCell
+											        edit:Nil];
+		[spec setProperty:@"alwaysVisible" forKey:@"key"];
+		[spec setProperty:@NO forKey:@"default"];
+        [specifiers addObject:spec];
+		
+		spec = [PSSpecifier preferenceSpecifierNamed:@"Text Color"
+                                              target:self
+											  set:@selector(setPreferenceValue:specifier:)
+											  get:@selector(readPreferenceValue:)
+                                              detail:PSListItemsController.class
+											  cell:PSLinkListCell
+											  edit:Nil];
+		[spec setProperty:@"textColor" forKey:@"key"];
+		[spec setProperty:@0 forKey:@"default"];
+		[spec setValues:@[@0, @1, @2] titles:@[@"White", @"Black", @"Red"]];
+		[specifiers addObject:spec];
+		
 		spec = [PSSpecifier preferenceSpecifierNamed:@"Width"
 		                                      target:self
 											  set:Nil
@@ -151,18 +175,16 @@
 		[spec setProperty:@YES forKey:@"showValue"];
         [specifiers addObject:spec];
 		
-		
-		
-		spec = [PSSpecifier preferenceSpecifierNamed:@"Alpha"
+		spec = [PSSpecifier preferenceSpecifierNamed:@"Alpha Background"
 		                                      target:self
 											  set:Nil
 											  get:Nil
                                               detail:Nil
 											  cell:PSGroupCell
 											  edit:Nil];
-		[spec setProperty:@"Alpha" forKey:@"label"];
+		[spec setProperty:@"Alpha Background" forKey:@"label"];
         [specifiers addObject:spec];
-		spec = [PSSpecifier preferenceSpecifierNamed:@"Alpha"
+		spec = [PSSpecifier preferenceSpecifierNamed:@"Alpha Background"
                                               target:self
 											  set:@selector(setPreferenceValue:specifier:)
 											  get:@selector(readPreferenceValue:)
@@ -171,6 +193,30 @@
 											  edit:Nil];
 		[spec setProperty:@"kAlpha" forKey:@"key"];
 		[spec setProperty:@(0.5) forKey:@"default"];
+		[spec setProperty:@(0.0) forKey:@"min"];
+		[spec setProperty:@(1.0) forKey:@"max"];
+		[spec setProperty:@YES forKey:@"isContinuous"];
+		[spec setProperty:@YES forKey:@"showValue"];
+        [specifiers addObject:spec];
+		
+		spec = [PSSpecifier preferenceSpecifierNamed:@"Alpha Text"
+		                                      target:self
+											  set:Nil
+											  get:Nil
+                                              detail:Nil
+											  cell:PSGroupCell
+											  edit:Nil];
+		[spec setProperty:@"Alpha Text" forKey:@"label"];
+        [specifiers addObject:spec];
+		spec = [PSSpecifier preferenceSpecifierNamed:@"Alpha Text"
+                                              target:self
+											  set:@selector(setPreferenceValue:specifier:)
+											  get:@selector(readPreferenceValue:)
+                                              detail:Nil
+											  cell:PSSliderCell
+											  edit:Nil];
+		[spec setProperty:@"kAlphaText" forKey:@"key"];
+		[spec setProperty:@(0.9) forKey:@"default"];
 		[spec setProperty:@(0.0) forKey:@"min"];
 		[spec setProperty:@(1.0) forKey:@"max"];
 		[spec setProperty:@YES forKey:@"isContinuous"];

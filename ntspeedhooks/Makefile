@@ -1,13 +1,13 @@
-include theos/makefiles/common.mk
+include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = NtSpeed
-NtSpeed_FILES = /mnt/d/codes/ntspeed/ntspeedhooks/Tweak.xm
-NtSpeed_FRAMEWORKS = CydiaSubstrate Foundation UIKit CoreGraphics
-#NtSpeed_CFLAGS = -fobjc-arc
-NtSpeed_LDFLAGS = -Wl,-segalign,4000
+$(TWEAK_NAME)_FILES = /mnt/d/codes/ntspeed/ntspeedhooks/Tweak.xm
+$(TWEAK_NAME)_FRAMEWORKS = CydiaSubstrate Foundation UIKit CoreGraphics
+#$(TWEAK_NAME)_CFLAGS = -fobjc-arc
+$(TWEAK_NAME)_LDFLAGS = -Wl,-segalign,4000
 
-NtSpeed_ARCHS = armv7 arm64
-export ARCHS = armv7 arm64
+$(TWEAK_NAME)_ARCHS = armv7 armv7s arm64 arm64e
+export ARCHS = armv7 armv7s arm64 arm64e
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 	
