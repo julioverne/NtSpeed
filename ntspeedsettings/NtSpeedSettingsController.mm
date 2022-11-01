@@ -1,6 +1,7 @@
 #import <notify.h>
 #import <Social/Social.h>
-#import <prefs.h>
+#import <libprefs/prefs.h>
+#include <Preferences/PSListItemsController.h>
 
 #define PLIST_PATH_Settings "/var/mobile/Library/Preferences/com.julioverne.ntspeed.plist"
 
@@ -349,7 +350,8 @@
 		[headerView addSubview:_label];
 		[headerView addSubview:underLabel];
 		
-	[_table setTableHeaderView:headerView];
+	//@badger200: I can't find header defining this
+	//[_table setTableHeaderView:headerView];
 	
 	[NSTimer scheduledTimerWithTimeInterval:0.5
                                      target:self

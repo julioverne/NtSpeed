@@ -144,7 +144,7 @@ __strong static id _sharedObject;
 	if (!_sharedObject) {
 		_sharedObject = [[self alloc] init];
 		[NSTimer scheduledTimerWithTimeInterval:1 target:_sharedObject selector:@selector(update) userInfo:nil repeats:YES];
-		CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)&orientationChanged, CFSTR("com.apple.springboard.screenchanged"), NULL, 0);
+		CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)&orientationChanged, CFSTR("com.apple.springboard.screenchanged"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 		CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), NULL, (CFNotificationCallback)&orientationChanged, CFSTR("UIWindowDidRotateNotification"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 	}
 	return _sharedObject;
@@ -177,7 +177,7 @@ __strong static id _sharedObject;
 			kScreenH = [[UIScreen mainScreen] bounds].size.height;
 			
 			springboardWindow = [[NtSpeedWindow alloc] initWithFrame:CGRectMake(0, 0, kWidth, kHeight)];
-			springboardWindow.windowLevel = 9999999999;
+			springboardWindow.windowLevel = 9999999999.0;
 			[springboardWindow setHidden:NO];
 			springboardWindow.alpha = 1;
 			[springboardWindow _setSecure:YES];
@@ -199,7 +199,7 @@ __strong static id _sharedObject;
 			[self update];
 			label.numberOfLines = 1;
 			label.textColor = textColor==0?[UIColor whiteColor]:textColor==1?[UIColor blackColor]:[UIColor redColor];
-			label.baselineAdjustment = YES;
+			label.baselineAdjustment = UIBaselineAdjustmentAlignCenters;
 			label.adjustsFontSizeToFitWidth = YES;
 			label.adjustsLetterSpacingToFitWidth = YES;
 			label.textAlignment = NSTextAlignmentCenter;
@@ -269,6 +269,11 @@ __strong static id _sharedObject;
 	__block int xLoc;
 	__block int yLoc;
 	#define DegreesToRadians(degrees) (degrees * M_PI / 180)
+
+	//@badger200: this is needed because screen W/H changes with orientation
+	kScreenW = [[UIScreen mainScreen] bounds].size.width;
+	kScreenH = [[UIScreen mainScreen] bounds].size.height;
+
 	switch (orientation) {
 	case UIDeviceOrientationLandscapeRight: {			
 			isLandscape = YES;
@@ -279,8 +284,8 @@ __strong static id _sharedObject;
 		}
 	case UIDeviceOrientationLandscapeLeft: {
 			isLandscape = YES;
-			yLoc = (kScreenH-kWidth-kLocX);
-			xLoc = (kScreenW-kHeight-kLocY);
+			yLoc = (kScreenW-kWidth-kLocX);
+			xLoc = (kScreenH-kHeight-kLocY);
 			newTransform = CGAffineTransformMakeRotation(DegreesToRadians(90));
 			break;
 		}
@@ -371,7 +376,7 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 
 %ctor
 {
-	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, screenDisplayStatus, CFSTR("com.apple.iokit.hid.displayStatus"), NULL, 0);
+	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, screenDisplayStatus, CFSTR("com.apple.iokit.hid.displayStatus"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, settingsChanged, CFSTR("com.julioverne.ntspeed/Settings"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 	settingsChanged(NULL, NULL, NULL, NULL, NULL);
 	%init;
