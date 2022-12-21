@@ -52,7 +52,7 @@
 											  edit:Nil];
 		[spec setProperty:@"textColor" forKey:@"key"];
 		[spec setProperty:@0 forKey:@"default"];
-		[spec setValues:@[@0, @1, @2] titles:@[@"White", @"Black", @"Red"]];
+		[spec setValues:@[@0, @1, @2, @3, @4, @5] titles:@[@"White", @"Black", @"Red", @"Green", @"Blue", @"Gray"]];
 		[specifiers addObject:spec];
 		
 		spec = [PSSpecifier preferenceSpecifierNamed:@"Width"
@@ -78,6 +78,16 @@
 		[spec setProperty:@NO forKey:@"isContinuous"];
 		[spec setProperty:@YES forKey:@"showValue"];
         [specifiers addObject:spec];
+		spec = [PSSpecifier preferenceSpecifierNamed:nil
+					      target:self
+											  set:@selector(setPreferenceValue:specifier:)
+											  get:@selector(readPreferenceValue:)
+					      detail:Nil
+											  cell:PSEditTextCell
+											  edit:Nil];
+		[spec setProperty:@"kWidth" forKey:@"key"];
+		[spec setProperty:@(40) forKey:@"default"];
+		[specifiers addObject:spec];
 		
 		spec = [PSSpecifier preferenceSpecifierNamed:@"Height"
 		                                      target:self
@@ -102,6 +112,16 @@
 		[spec setProperty:@NO forKey:@"isContinuous"];
 		[spec setProperty:@YES forKey:@"showValue"];
         [specifiers addObject:spec];
+		spec = [PSSpecifier preferenceSpecifierNamed:nil
+					      target:self
+											  set:@selector(setPreferenceValue:specifier:)
+											  get:@selector(readPreferenceValue:)
+					      detail:Nil
+											  cell:PSEditTextCell
+											  edit:Nil];
+		[spec setProperty:@"kHeight" forKey:@"key"];
+		[spec setProperty:@(15) forKey:@"default"];
+		[specifiers addObject:spec];
 		
 		spec = [PSSpecifier preferenceSpecifierNamed:@"Location X"
 		                                      target:self
@@ -126,6 +146,16 @@
 		[spec setProperty:@NO forKey:@"isContinuous"];
 		[spec setProperty:@YES forKey:@"showValue"];
         [specifiers addObject:spec];
+		spec = [PSSpecifier preferenceSpecifierNamed:nil
+					      target:self
+											  set:@selector(setPreferenceValue:specifier:)
+											  get:@selector(readPreferenceValue:)
+					      detail:Nil
+											  cell:PSEditTextCell
+											  edit:Nil];
+		[spec setProperty:@"kLocX" forKey:@"key"];
+		[spec setProperty:@(5) forKey:@"default"];
+		[specifiers addObject:spec];
 		
 		spec = [PSSpecifier preferenceSpecifierNamed:@"Location Y"
 		                                      target:self
@@ -150,6 +180,16 @@
 		[spec setProperty:@NO forKey:@"isContinuous"];
 		[spec setProperty:@YES forKey:@"showValue"];
         [specifiers addObject:spec];
+		spec = [PSSpecifier preferenceSpecifierNamed:nil
+					      target:self
+											  set:@selector(setPreferenceValue:specifier:)
+											  get:@selector(readPreferenceValue:)
+					      detail:Nil
+											  cell:PSEditTextCell
+											  edit:Nil];
+		[spec setProperty:@"kLocY" forKey:@"key"];
+		[spec setProperty:@(20) forKey:@"default"];
+		[specifiers addObject:spec];
 		
 		spec = [PSSpecifier preferenceSpecifierNamed:@"Radius"
 		                                      target:self
@@ -174,6 +214,16 @@
 		[spec setProperty:@YES forKey:@"isContinuous"];
 		[spec setProperty:@YES forKey:@"showValue"];
         [specifiers addObject:spec];
+		spec = [PSSpecifier preferenceSpecifierNamed:nil
+					      target:self
+											  set:@selector(setPreferenceValue:specifier:)
+											  get:@selector(readPreferenceValue:)
+					      detail:Nil
+											  cell:PSEditTextCell
+											  edit:Nil];
+		[spec setProperty:@"kRadius" forKey:@"key"];
+		[spec setProperty:@6 forKey:@"default"];
+		[specifiers addObject:spec];
 		
 		spec = [PSSpecifier preferenceSpecifierNamed:@"Alpha Background"
 		                                      target:self
@@ -198,6 +248,16 @@
 		[spec setProperty:@YES forKey:@"isContinuous"];
 		[spec setProperty:@YES forKey:@"showValue"];
         [specifiers addObject:spec];
+		spec = [PSSpecifier preferenceSpecifierNamed:nil
+					      target:self
+											  set:@selector(setPreferenceValue:specifier:)
+											  get:@selector(readPreferenceValue:)
+					      detail:Nil
+											  cell:PSEditTextCell
+											  edit:Nil];
+		[spec setProperty:@"kAlpha" forKey:@"key"];
+		[spec setProperty:@(0.5) forKey:@"default"];
+		[specifiers addObject:spec];
 		
 		spec = [PSSpecifier preferenceSpecifierNamed:@"Alpha Text"
 		                                      target:self
@@ -222,6 +282,16 @@
 		[spec setProperty:@YES forKey:@"isContinuous"];
 		[spec setProperty:@YES forKey:@"showValue"];
         [specifiers addObject:spec];
+		spec = [PSSpecifier preferenceSpecifierNamed:nil
+					      target:self
+											  set:@selector(setPreferenceValue:specifier:)
+											  get:@selector(readPreferenceValue:)
+					      detail:Nil
+											  cell:PSEditTextCell
+											  edit:Nil];
+		[spec setProperty:@"kAlphaText" forKey:@"key"];
+		[spec setProperty:@(0.9) forKey:@"default"];
+		[specifiers addObject:spec];
 
 		
 		spec = [PSSpecifier emptyGroupSpecifier];
@@ -256,7 +326,7 @@
 		[spec setProperty:[UIImage imageWithContentsOfFile:[[self bundle] pathForResource:@"twitter" ofType:@"png"]] forKey:@"iconImage"];
         [specifiers addObject:spec];
 		spec = [PSSpecifier emptyGroupSpecifier];
-        [spec setProperty:@"NtSpeed © 2018" forKey:@"footerText"];
+        [spec setProperty:@"NtSpeed © 2021" forKey:@"footerText"];
         [specifiers addObject:spec];
 		_specifiers = [specifiers copy];
 	}
@@ -285,20 +355,60 @@
 {
 	[@{} writeToFile:@PLIST_PATH_Settings atomically:YES];
 	[self reloadSpecifiers];
+	[self showPrompt];
 	notify_post("com.julioverne.ntspeed/Settings");
 }
+
+- (void)showPrompt
+{
+	if(objc_getClass("UIAlertController")!=nil) {
+		UIAlertController* alert = [objc_getClass("UIAlertController") alertControllerWithTitle:self.title message:@"An Respring is Requerid for this option." preferredStyle:UIAlertControllerStyleAlert];
+		UIAlertAction* defaultAction = [objc_getClass("UIAlertAction") actionWithTitle:@"Respring" style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {
+			system("killall backboardd SpringBoard");
+		}];
+		[alert addAction:defaultAction];
+		UIAlertAction* defaultActionCancel = [objc_getClass("UIAlertAction") actionWithTitle:@"Cancel" style:UIAlertActionStyleDefault handler:nil];
+		[alert addAction:defaultActionCancel];
+		[self presentViewController:alert animated:YES completion:nil];
+	} else {
+		UIAlertView *alert = [[objc_getClass("UIAlertView") alloc] initWithTitle:self.title message:@"An Respring is Requerid for this option." delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"Respring", nil];
+		alert.tag = 55;
+		[alert show];
+	}
+}
+
+- (void)reloadSpec
+{
+	[NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(_reloadSpec) object:nil];
+	[self performSelector:@selector(_reloadSpec) withObject:nil afterDelay:0.5f];
+}
+
+- (void)_reloadSpec
+{
+	[self reloadSpecifiers];
+}
+
 - (void)setPreferenceValue:(id)value specifier:(PSSpecifier *)specifier
 {
 	@autoreleasepool {
 		NSMutableDictionary *CydiaEnablePrefsCheck = [[NSMutableDictionary alloc] initWithContentsOfFile:@PLIST_PATH_Settings]?:[NSMutableDictionary dictionary];
-		[CydiaEnablePrefsCheck setObject:value forKey:[specifier identifier]];
+		
+		NSString* keyVal = [specifier identifier];
+		id val = value;
+		
+		if([keyVal hasSuffix:@".0"]) {
+			keyVal = [keyVal substringToIndex:[keyVal length]-2];
+			val = @([(NSString*)val doubleValue]);
+		}
+		
+		[CydiaEnablePrefsCheck setObject:val forKey:keyVal];
 		[CydiaEnablePrefsCheck writeToFile:@PLIST_PATH_Settings atomically:YES];
 		notify_post("com.julioverne.ntspeed/Settings");
 		if ([[specifier properties] objectForKey:@"PromptRespring"]) {
-			UIAlertView *alert = [[UIAlertView alloc] initWithTitle:self.title message:@"An Respring is Requerid for this option." delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"Respring", nil];
-			alert.tag = 55;
-			[alert show];
+			[self showPrompt];
 		}
+		
+		[self reloadSpec];
 	}
 }
 - (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex
@@ -310,8 +420,15 @@
 - (id)readPreferenceValue:(PSSpecifier*)specifier
 {
 	@autoreleasepool {
+		
+		NSString* keyVal = [specifier identifier];
+		
+		if([keyVal hasSuffix:@".0"]) {
+			keyVal = [keyVal substringToIndex:[keyVal length]-2];
+		}
+		
 		NSDictionary *CydiaEnablePrefsCheck = [[NSDictionary alloc] initWithContentsOfFile:@PLIST_PATH_Settings];
-		return CydiaEnablePrefsCheck[[specifier identifier]]?:[[specifier properties] objectForKey:@"default"];
+		return CydiaEnablePrefsCheck[keyVal]?:[[specifier properties] objectForKey:@"default"];
 	}
 }
 - (void)_returnKeyPressed:(id)arg1
@@ -333,7 +450,7 @@
 		_label.font = [UIFont fontWithName:@"HelveticaNeue-UltraLight" size:48];
 		[_label setText:self.title];
 		[_label setBackgroundColor:[UIColor clearColor]];
-		_label.textColor = [UIColor blackColor];
+		//_label.textColor = [UIColor blackColor];
 		_label.textAlignment = NSTextAlignmentCenter;
 		_label.alpha = 0;
 

@@ -35,15 +35,15 @@ static BOOL forceNewLocation;
 static float kScreenW;
 static float kScreenH;
 
-static __strong NSString* kBs = [@"%ldB/s" copy];
-static __strong NSString* kKs = [@"%.1fK/s" copy];
-static __strong NSString* kMs = [@"%.2fM/s" copy];
-static __strong NSString* kGs = [@"%.3fG/s" copy];
+static __strong NSString* kBs = [[@"%ldB/s" copy] retain];
+static __strong NSString* kKs = [[@"%.1fK/s" copy] retain];
+static __strong NSString* kMs = [[@"%.2fM/s" copy] retain];
+static __strong NSString* kGs = [[@"%.3fG/s" copy] retain];
 
 
-static NSString *bytesFormat(long long bytes)
+static __unused NSString *bytesFormat(long long bytes)
 {
-	@autoreleasepool {
+	//@autoreleasepool {
 		if(bytes < 1024) {
 			return [NSString stringWithFormat:kBs, bytes];
 		} else if(bytes >= 1024 && bytes < 1024 * 1024) {
@@ -53,7 +53,7 @@ static NSString *bytesFormat(long long bytes)
 		} else {
 			return [NSString stringWithFormat:kGs, (double)bytes / (1024 * 1024 * 1024)];
 		}
-	}
+	//}
 }
 
 static long long getBytesTotal() 
@@ -107,6 +107,14 @@ static long long getBytesTotal()
 {
 	return YES;
 }
+- (void)dalloc
+{
+	return;
+}
+- (oneway void)release
+{
+	return;
+}
 @end
 
 @interface NtSpeed : NSObject
@@ -142,12 +150,12 @@ __strong static id _sharedObject;
 + (id)sharedInstance
 {
 	if (!_sharedObject) {
-		_sharedObject = [[self alloc] init];
+		_sharedObject = [[[self alloc] init] retain];
 		[NSTimer scheduledTimerWithTimeInterval:1 target:_sharedObject selector:@selector(update) userInfo:nil repeats:YES];
-		CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)&orientationChanged, CFSTR("com.apple.springboard.screenchanged"), NULL, 0);
+		CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)&orientationChanged, CFSTR("com.apple.springboard.screenchanged"), NULL, (CFNotificationSuspensionBehavior)0);
 		CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), NULL, (CFNotificationCallback)&orientationChanged, CFSTR("UIWindowDidRotateNotification"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 	}
-	return _sharedObject;
+	return [_sharedObject retain];
 }
 + (BOOL)sharedInstanceExist
 {
@@ -158,15 +166,24 @@ __strong static id _sharedObject;
 }
 + (void)notifyOrientationChange
 {
-	if([NtSpeed sharedInstanceExist]) {
-		if (NtSpeed* NTShared = [NtSpeed sharedInstance]) {
-			[NTShared orientationChanged];
+	@try {
+		if([NtSpeed sharedInstanceExist]) {
+			if (NtSpeed* NTShared = [[NtSpeed sharedInstance] retain]) {
+				[NTShared orientationChanged];
+			}
 		}
+	} @catch (NSException * e) {
 	}
 }
 - (void)firstload
 {
 	return;
+}
+- (void)updateLabelColor
+{
+	if(label) {
+		label.textColor = textColor==0?[UIColor whiteColor]:textColor==1?[UIColor blackColor]:textColor==2?[UIColor redColor]:textColor==3?[UIColor greenColor]:textColor==4?[UIColor blueColor]:[UIColor grayColor];
+	}
 }
 -(id)init
 {
@@ -176,8 +193,8 @@ __strong static id _sharedObject;
 			kScreenW = [[UIScreen mainScreen] bounds].size.width;
 			kScreenH = [[UIScreen mainScreen] bounds].size.height;
 			
-			springboardWindow = [[NtSpeedWindow alloc] initWithFrame:CGRectMake(0, 0, kWidth, kHeight)];
-			springboardWindow.windowLevel = 9999999999;
+			springboardWindow = [[[NtSpeedWindow alloc] initWithFrame:CGRectZero] retain];
+			springboardWindow.windowLevel = 9999999;
 			[springboardWindow setHidden:NO];
 			springboardWindow.alpha = 1;
 			[springboardWindow _setSecure:YES];
@@ -187,29 +204,24 @@ __strong static id _sharedObject;
 			springboardWindow.layer.shouldRasterize  = NO;
 			
 			backView = [UIView new];
-			backView.frame = CGRectMake(0, 0, springboardWindow.frame.size.width, springboardWindow.frame.size.height);
 			backView.backgroundColor = [UIColor colorWithWhite: 0.50 alpha:1];
-			backView.alpha = kAlpha; // 0.5f
 			[(UIView *)springboardWindow addSubview:backView];
 			
 			content = [UIView new];
-			content.alpha = kAlphaText;// 0.9f
-			content.frame = CGRectMake(4, 0, springboardWindow.frame.size.width-8, springboardWindow.frame.size.height);
-			label = [[UILabel alloc]initWithFrame:CGRectMake(0, 0, content.frame.size.width, content.frame.size.height)];
+			label = [[UILabel alloc]initWithFrame:CGRectZero];
 			[self update];
 			label.numberOfLines = 1;
-			label.textColor = textColor==0?[UIColor whiteColor]:textColor==1?[UIColor blackColor]:[UIColor redColor];
-			label.baselineAdjustment = YES;
+			[self updateLabelColor];
+			label.baselineAdjustment = (UIBaselineAdjustment)YES;
 			label.adjustsFontSizeToFitWidth = YES;
 			label.adjustsLetterSpacingToFitWidth = YES;
 			label.textAlignment = NSTextAlignmentCenter;
 			[content addSubview:label];
 			[(UIView *)springboardWindow addSubview:content];
 			
-			[self orientationChanged];
+			[self updateFrame];
 			
 		} @catch (NSException * e) {
-			
 		}
 	}
 	return self;
@@ -221,93 +233,111 @@ __strong static id _sharedObject;
 }
 - (void)_updateFrame
 {
-	backView.alpha = kAlpha;
-	content.alpha = kAlphaText;
-	label.textColor = textColor==0?[UIColor whiteColor]:textColor==1?[UIColor blackColor]:[UIColor redColor];
-	springboardWindow.layer.cornerRadius = kRadius;
-	springboardWindow.frame = CGRectMake(0, 0, kWidth, kHeight);
-	backView.frame = CGRectMake(0, 0, springboardWindow.frame.size.width, springboardWindow.frame.size.height);
-	content.frame = CGRectMake(4, 0, springboardWindow.frame.size.width-8, springboardWindow.frame.size.height);
-	label.frame = CGRectMake(0, 0, content.frame.size.width, content.frame.size.height);
-	forceNewLocation = YES;
-	[springboardWindow setHidden:NO];
-	[self orientationChanged];
+	@try {
+		backView.alpha = kAlpha;
+		content.alpha = kAlphaText;
+		[self updateLabelColor];
+		springboardWindow.layer.cornerRadius = kRadius;
+		springboardWindow.frame = CGRectMake(0, 0, kWidth, kHeight);
+		backView.frame = CGRectMake(0, 0, springboardWindow.frame.size.width, springboardWindow.frame.size.height);
+		content.frame = CGRectMake(4, 0, springboardWindow.frame.size.width-8, springboardWindow.frame.size.height);
+		label.frame = CGRectMake(0, 0, content.frame.size.width, content.frame.size.height);
+		forceNewLocation = YES;
+		[springboardWindow setHidden:NO];
+		[self orientationChanged];
+	} @catch (NSException * e) {
+	}
 }
 - (void)update
 {
-	@autoreleasepool {
-		if(!Enabled || isBlackScreen) {
-			if(springboardWindow && !springboardWindow.hidden) {
-				[springboardWindow setHidden:YES];
+	@try {
+		@autoreleasepool {
+			if(!Enabled || isBlackScreen) {
+				if(springboardWindow && !springboardWindow.hidden) {
+					[springboardWindow setHidden:YES];
+				}
+				return;
 			}
-			return;
-		}
-		long long nowData = getBytesTotal();
-		if(!oldSpeed) {
+			long long nowData = getBytesTotal();
+			if(!oldSpeed) {
+				oldSpeed = nowData;
+			}
+			if(label&&springboardWindow) {
+				long long speed = nowData-oldSpeed;
+				if(speed < 0) {
+					speed = 0;
+				}
+				[springboardWindow setHidden:(!alwaysVisible && speed==0)?YES:NO];
+				label.text = bytesFormat(speed);
+			}
 			oldSpeed = nowData;
 		}
-		if(label&&springboardWindow) {
-			long long speed = nowData-oldSpeed;
-			if(speed < 0) {
-				speed = 0;
-			}
-			[springboardWindow setHidden:(!alwaysVisible && speed==0)?YES:NO];
-			label.text = bytesFormat(speed);
-		}
-		oldSpeed = nowData;
+	} @catch (NSException * e) {
 	}
 }
 - (void)orientationChanged
 {
-	UIDeviceOrientation orientation = [[UIApplication sharedApplication] _frontMostAppOrientation];
-	if(orientation == orientationOld && !forceNewLocation) {
-		return;
+	@try {
+		UIDeviceOrientation orientation = [[UIApplication sharedApplication] _frontMostAppOrientation];
+		if(orientation == orientationOld && !forceNewLocation) {
+			return;
+		}
+		forceNewLocation = NO;
+		BOOL isLandscape;
+		__block CGAffineTransform newTransform;
+		__block int xLoc;
+		__block int yLoc;
+		#define DegreesToRadians(degrees) (degrees * M_PI / 180)
+		switch (orientation) {
+		case UIDeviceOrientationLandscapeRight: {			
+				isLandscape = YES;
+				yLoc = kLocX;
+				xLoc = kLocY;
+				newTransform = CGAffineTransformMakeRotation(-DegreesToRadians(90));
+				break;
+			}
+		case UIDeviceOrientationLandscapeLeft: {
+				isLandscape = YES;
+				yLoc = (kScreenH-kWidth-kLocX);
+				xLoc = (kScreenW-kHeight-kLocY);
+				newTransform = CGAffineTransformMakeRotation(DegreesToRadians(90));
+				break;
+			}
+			case UIDeviceOrientationPortraitUpsideDown: {
+				isLandscape = NO;
+				yLoc = (kScreenH-kHeight-kLocY);
+				xLoc = kLocX;
+				newTransform = CGAffineTransformMakeRotation(DegreesToRadians(180));
+				break;
+			}
+			case UIDeviceOrientationPortrait:
+		default: {
+				isLandscape = NO;
+				yLoc = kLocY;
+				xLoc = (kScreenW-kWidth-kLocX);
+				newTransform = CGAffineTransformMakeRotation(DegreesToRadians(0));
+				break;
+			}
+		}
+		[UIView animateWithDuration:0.3f animations:^{
+			[springboardWindow setTransform:newTransform];
+			CGRect frame = springboardWindow.frame;
+			frame.origin.y = yLoc;
+			frame.origin.x = xLoc;
+			springboardWindow.frame = frame;
+			orientationOld = orientation;
+		} completion:nil];
+		
+	} @catch (NSException * e) {
 	}
-	forceNewLocation = NO;
-	BOOL isLandscape;
-	__block CGAffineTransform newTransform;
-	__block int xLoc;
-	__block int yLoc;
-	#define DegreesToRadians(degrees) (degrees * M_PI / 180)
-	switch (orientation) {
-	case UIDeviceOrientationLandscapeRight: {			
-			isLandscape = YES;
-			yLoc = kLocX;
-			xLoc = kLocY;
-			newTransform = CGAffineTransformMakeRotation(-DegreesToRadians(90));
-			break;
-		}
-	case UIDeviceOrientationLandscapeLeft: {
-			isLandscape = YES;
-			yLoc = (kScreenH-kWidth-kLocX);
-			xLoc = (kScreenW-kHeight-kLocY);
-			newTransform = CGAffineTransformMakeRotation(DegreesToRadians(90));
-			break;
-		}
-		case UIDeviceOrientationPortraitUpsideDown: {
-			isLandscape = NO;
-			yLoc = (kScreenH-kHeight-kLocY);
-			xLoc = kLocX;
-			newTransform = CGAffineTransformMakeRotation(DegreesToRadians(180));
-			break;
-		}
-		case UIDeviceOrientationPortrait:
-	default: {
-			isLandscape = NO;
-			yLoc = kLocY;
-			xLoc = (kScreenW-kWidth-kLocX);
-			newTransform = CGAffineTransformMakeRotation(DegreesToRadians(0));
-			break;
-		}
-    }
-	[UIView animateWithDuration:0.3f animations:^{
-		[springboardWindow setTransform:newTransform];
-		CGRect frame = springboardWindow.frame;
-		frame.origin.y = yLoc;
-		frame.origin.x = xLoc;
-		springboardWindow.frame = frame;
-		orientationOld = orientation;
-	} completion:nil];
+}
+- (void)dalloc
+{
+	return;
+}
+- (oneway void)release
+{
+	return;
 }
 @end
 
@@ -315,7 +345,7 @@ __strong static id _sharedObject;
 - (void)applicationDidFinishLaunching:(id)application
 {
 	%orig;
-	[[NtSpeed sharedInstance] firstload];	
+	[[[NtSpeed sharedInstance] retain] firstload];	
 }
 %end
 
@@ -371,7 +401,7 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 
 %ctor
 {
-	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, screenDisplayStatus, CFSTR("com.apple.iokit.hid.displayStatus"), NULL, 0);
+	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, screenDisplayStatus, CFSTR("com.apple.iokit.hid.displayStatus"), NULL, (CFNotificationSuspensionBehavior)0);
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, settingsChanged, CFSTR("com.julioverne.ntspeed/Settings"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 	settingsChanged(NULL, NULL, NULL, NULL, NULL);
 	%init;
